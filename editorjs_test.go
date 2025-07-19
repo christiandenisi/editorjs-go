@@ -1,27 +1,72 @@
 package editorjs
 
 import (
+	"html"
+	"strings"
 	"testing"
 )
 
-// Temporary paragraph renderer for testing purposes.
+// --- Plugin: Paragraph ---
 type ParagraphData struct {
 	Text string `json:"text"`
 }
 
 func RenderParagraph(b Block[ParagraphData], ctx *Context) (string, error) {
-	return "<p>" + ctx.EscapeHTML(b.Data.Text) + "</p>", nil
+	return "<p>" + html.EscapeString(b.Data.Text) + "</p>", nil
 }
 
-func TestParagraphRender(t *testing.T) {
-	json := []byte(`{
+// --- Plugin: Quote (con blocchi interni) ---
+type QuoteData struct {
+	Items []RawBlock `json:"items"`
+}
+
+func RenderQuote(b Block[QuoteData], ctx *Context) (string, error) {
+	content, err := ctx.RenderBlocks(b.Data.Items)
+	if err != nil {
+		return "", err
+	}
+	return "<blockquote>" + content + "</blockquote>", nil
+}
+
+// --- Plugin: List ---
+type ListData struct {
+	Items []string `json:"items"`
+}
+
+func RenderList(b Block[ListData], ctx *Context) (string, error) {
+	var bld strings.Builder
+	bld.WriteString("<ul>")
+	for _, item := range b.Data.Items {
+		bld.WriteString("<li>" + html.EscapeString(item) + "</li>")
+	}
+	bld.WriteString("</ul>")
+	return bld.String(), nil
+}
+
+func TestRecursivePlugins(t *testing.T) {
+	jsonData := []byte(`{
 		"time": 1752781597903,
 		"blocks": [
 			{
-				"id": "abc123",
-				"type": "paragraph",
+				"id": "q1",
+				"type": "quote",
 				"data": {
-					"text": "Hello <b>world</b>"
+					"items": [
+						{
+							"id": "p1",
+							"type": "paragraph",
+							"data": {
+								"text": "Nested paragraph inside quote"
+							}
+						},
+						{
+							"id": "l1",
+							"type": "list",
+							"data": {
+								"items": ["One", "Two", "Three"]
+							}
+						}
+					]
 				}
 			}
 		],
@@ -30,15 +75,24 @@ func TestParagraphRender(t *testing.T) {
 
 	converter := New()
 
-	RegisterTyped(converter, "paragraph", RenderParagraph)
+	// Register multiple plugins
+	Register(converter, "paragraph", RenderParagraph)
+	Register(converter, "quote", RenderQuote)
+	Register(converter, "list", RenderList)
 
-	output, err := converter.Convert(json)
+	// Execute rendering
+	html, err := converter.Convert(jsonData)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := "<p>Hello &lt;b&gt;world&lt;/b&gt;</p>"
-	if output != expected {
-		t.Errorf("expected %q, got %q", expected, output)
+	expected := `<blockquote><p>Nested paragraph inside quote</p><ul><li>One</li><li>Two</li><li>Three</li></ul></blockquote>`
+
+	normalize := func(s string) string {
+		return strings.ReplaceAll(strings.TrimSpace(s), "\n", "")
+	}
+
+	if normalize(html) != normalize(expected) {
+		t.Errorf("expected:\n%s\n\ngot:\n%s", expected, html)
 	}
 }

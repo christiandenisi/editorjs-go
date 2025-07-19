@@ -25,5 +25,18 @@ type Block[T any] struct {
 	Tunes map[string]interface{}
 }
 
-// TypedRenderer defines a renderer function for a typed block.
-type TypedRenderer[T any] func(Block[T], *Context) (string, error)
+// Context provides tools to renderer functions.
+type Context struct {
+	RenderBlocks func([]RawBlock) (string, error)
+	RenderBlock  func(RawBlock) (string, error)
+	Converter    *Converter
+}
+
+// Renderer defines a renderer function for a typed block.
+type Renderer[T any] func(Block[T], *Context) (string, error)
+
+// decoderFn is an internal decoder function type.
+type decoderFn func(RawBlock) (any, error)
+
+// rendererFn is an internal renderer function type.
+type rendererFn func(any, *Context) (string, error)
