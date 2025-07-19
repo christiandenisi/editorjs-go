@@ -1,5 +1,6 @@
+![Editor.js Gopher](./assets/editorjs-gopher.png)
 
-# editorjs-go
+# EDITORJS GO
 
 **editorjs-go** is a flexible, type-safe, and extensible Go library for parsing and rendering [Editor.js](https://editorjs.io/) documents into HTML, Markdown, or any other output format.
 
