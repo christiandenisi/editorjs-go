@@ -28,7 +28,7 @@ package main
 
 import (
     "fmt"
-    "github.com/yourusername/editorjs-go"
+    "github.com/christiandenisi/editorjs-go"
     "html"
 )
 
