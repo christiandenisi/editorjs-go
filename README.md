@@ -16,7 +16,7 @@
 ## 📦 Installation
 
 ```bash
-go get github.com/yourusername/editorjs-go
+go get github.com/christiandenisi/editorjs-go
 ```
 
 ---
